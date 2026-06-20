@@ -4,9 +4,9 @@
 # After first deploy, set these env vars in Render Dashboard → Environment:
 #   DATABASE_URL  — Neon.tech connection string
 #   REDIS_URL     — Upstash Redis REST URL  (rediss://...)
-#   KAFKA_BROKERS — Upstash Kafka bootstrap server
-#   KAFKA_USERNAME — Upstash Kafka SASL username
-#   KAFKA_PASSWORD — Upstash Kafka SASL password
+#   KAFKA_BROKERS — Managed Kafka bootstrap server(s)
+#   KAFKA_USERNAME — Kafka SASL username
+#   KAFKA_PASSWORD — Kafka SASL password
 #   JWT_SECRET    — any random 32+ char string
 #   CORS_ORIGIN   — your Vercel URL e.g. https://time-travel-chat.vercel.app
 

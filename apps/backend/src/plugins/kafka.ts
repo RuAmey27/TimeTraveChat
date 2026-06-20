@@ -12,7 +12,7 @@ export default fp(async (app: FastifyInstance) => {
   const kafka = new Kafka({
     clientId: 'time-travel-chat',
     brokers:  config.KAFKA_BROKERS.split(','),
-    // Upstash Kafka (and other managed brokers) require SASL + SSL
+    // Most managed Kafka brokers require SASL + SSL
     ...(config.KAFKA_USERNAME && {
       ssl:  true,
       sasl: {
