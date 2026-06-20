@@ -6,3 +6,5 @@ dist/
 coverage/
 .nyc_output/
 PROJECT_PLAN.md
+.vercel
+.env*

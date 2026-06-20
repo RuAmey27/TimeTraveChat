@@ -1,6 +1,11 @@
 # ─── Stage 1: Install & Build ─────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
+
+# Prisma engines require OpenSSL at build/runtime on many platforms.
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends openssl ca-certificates \
+	&& rm -rf /var/lib/apt/lists/*
 
 # Copy manifests first for better layer caching
 COPY package.json package-lock.json ./
@@ -25,8 +30,12 @@ RUN cd apps/backend && npx prisma generate
 RUN npm run build --workspace=apps/backend
 
 # ─── Stage 2: Production image ────────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
+
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends openssl ca-certificates \
+	&& rm -rf /var/lib/apt/lists/*
 
 # Only copy the built artefacts + the node_modules (symlinks intact)
 COPY --from=builder /app/node_modules             ./node_modules

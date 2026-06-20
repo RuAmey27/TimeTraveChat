@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [master]
 
 # Only one deploy at a time; cancel in-progress if a newer commit is pushed
 concurrency:
