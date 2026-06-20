@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register -r dotenv/config src/index.ts",
     "build": "tsc",
-    "start": "node -r dotenv/config dist/index.js",
+    "start": "node -r dotenv/config dist/apps/backend/src/index.js",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio"

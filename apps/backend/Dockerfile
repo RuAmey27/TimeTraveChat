@@ -52,4 +52,4 @@ EXPOSE 4000
 
 # Run migrations then start the server
 # `prisma migrate deploy` applies pending migrations without interactive prompts
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/apps/backend/src/index.js"]
