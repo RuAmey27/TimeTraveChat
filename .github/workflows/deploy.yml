@@ -1,0 +1,95 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+# Only one deploy at a time; cancel in-progress if a newer commit is pushed
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── 1. Type-check before deploying anything ──────────────────────────────────
+  typecheck:
+    name: TypeScript check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace=packages/shared
+      - working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci
+        run: npx prisma generate
+      - working-directory: apps/backend
+        run: npx tsc --noEmit
+      - working-directory: apps/frontend
+        run: npx tsc --noEmit
+
+  # ── 2. Deploy backend to Render ───────────────────────────────────────────────
+  # Render watches this repo and redeploys automatically, but we also
+  # trigger the deploy hook so the deploy is tied to this workflow's status.
+  #
+  # Required secret: RENDER_DEPLOY_HOOK_URL
+  # Get it from: Render Dashboard → your service → Settings → Deploy Hook
+  deploy-backend:
+    name: Deploy backend → Render
+    needs: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy
+        run: |
+          curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" \
+            -o /dev/null \
+            -w "HTTP %{http_code}\n"
+
+  # ── 3. Deploy frontend to Vercel ─────────────────────────────────────────────
+  # Required secrets:
+  #   VERCEL_TOKEN      — from vercel.com/account/tokens
+  #   VERCEL_ORG_ID     — from .vercel/project.json after `vercel link`
+  #   VERCEL_PROJECT_ID — from .vercel/project.json after `vercel link`
+  #   VITE_API_URL      — your Render service URL e.g. https://ttt-backend.onrender.com
+  deploy-frontend:
+    name: Deploy frontend → Vercel
+    needs: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared types
+        run: npm run build --workspace=packages/shared
+
+      - name: Build frontend
+        run: npm run build --workspace=apps/frontend
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      # Pull Vercel project settings (.vercel/ folder)
+      - name: Pull Vercel project info
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID:     ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # Deploy the pre-built dist/ — skip Vercel's own build step
+      - name: Deploy to Vercel (production)
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID:     ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

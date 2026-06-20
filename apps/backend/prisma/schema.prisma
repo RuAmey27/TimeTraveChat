@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  username     String   @unique
+  email        String   @unique
+  phone        String?  @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  chatsCreated Chat[]       @relation("ChatCreatedBy")
+  members      ChatMember[]
+  branches     Branch[]
+
+  @@map("users")
+}
+
+model Chat {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  creator   User         @relation("ChatCreatedBy", fields: [createdBy], references: [id])
+  members   ChatMember[]
+  events    Event[]
+  branches  Branch[]
+  snapshots Snapshot[]
+
+  @@map("chats")
+}
+
+model ChatMember {
+  chatId   String   @map("chat_id") @db.Uuid
+  userId   String   @map("user_id") @db.Uuid
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([chatId, userId])
+  @@map("chat_members")
+}
+
+model Branch {
+  id                 String   @id @default(uuid()) @db.Uuid
+  chatId             String   @map("chat_id") @db.Uuid
+  parentBranchId     String?  @map("parent_branch_id") @db.Uuid
+  branchPointEventId String?  @map("branch_point_event_id") @db.Uuid
+  name               String
+  createdBy          String   @map("created_by") @db.Uuid
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  chat          Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  creator       User     @relation(fields: [createdBy], references: [id])
+  parentBranch  Branch?  @relation("BranchParentChild", fields: [parentBranchId], references: [id])
+  childBranches Branch[] @relation("BranchParentChild")
+  events        Event[]
+  snapshots     Snapshot[]
+
+  @@map("branches")
+}
+
+model Event {
+  id          String   @id @default(uuid()) @db.Uuid
+  chatId      String   @map("chat_id") @db.Uuid
+  branchId    String   @map("branch_id") @db.Uuid
+  eventType   String   @map("event_type")
+  aggregateId String   @map("aggregate_id") @db.Uuid
+  payload     Json
+  metadata    Json?
+  version     BigInt
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  chat   Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@index([chatId, branchId, version])
+  @@index([createdAt])
+  @@map("events")
+}
+
+model Snapshot {
+  id        String   @id @default(uuid()) @db.Uuid
+  chatId    String   @map("chat_id") @db.Uuid
+  branchId  String   @map("branch_id") @db.Uuid
+  version   BigInt
+  state     Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  chat   Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, branchId, version])
+  @@map("snapshots")
+}

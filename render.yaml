@@ -1,0 +1,43 @@
+# Render Infrastructure-as-Code
+# Docs: https://render.com/docs/blueprint-spec
+#
+# After first deploy, set these env vars in Render Dashboard → Environment:
+#   DATABASE_URL  — Neon.tech connection string
+#   REDIS_URL     — Upstash Redis REST URL  (rediss://...)
+#   KAFKA_BROKERS — Upstash Kafka bootstrap server
+#   KAFKA_USERNAME — Upstash Kafka SASL username
+#   KAFKA_PASSWORD — Upstash Kafka SASL password
+#   JWT_SECRET    — any random 32+ char string
+#   CORS_ORIGIN   — your Vercel URL e.g. https://time-travel-chat.vercel.app
+
+services:
+  - type: web
+    name: ttt-backend
+    runtime: docker
+    # Build context is repo root so Dockerfile can copy packages/shared
+    dockerfilePath: apps/backend/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4000"
+      - key: KAFKAJS_NO_PARTITIONER_WARNING
+        value: "1"
+      # The following are secret — set them in Render Dashboard, not here
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: KAFKA_BROKERS
+        sync: false
+      - key: KAFKA_USERNAME
+        sync: false
+      - key: KAFKA_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true   # Render auto-generates a secure random value
+      - key: CORS_ORIGIN
+        sync: false
