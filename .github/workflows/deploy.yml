@@ -31,24 +31,7 @@ jobs:
       - working-directory: apps/frontend
         run: npx tsc --noEmit
 
-  # ── 2. Deploy backend to Render ───────────────────────────────────────────────
-  # Render watches this repo and redeploys automatically, but we also
-  # trigger the deploy hook so the deploy is tied to this workflow's status.
-  #
-  # Required secret: RENDER_DEPLOY_HOOK_URL
-  # Get it from: Render Dashboard → your service → Settings → Deploy Hook
-  deploy-backend:
-    name: Deploy backend → Render
-    needs: typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Render deploy
-        run: |
-          curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" \
-            -o /dev/null \
-            -w "HTTP %{http_code}\n"
-
-  # ── 3. Deploy frontend to Vercel ─────────────────────────────────────────────
+  # ── 2. Deploy frontend to Vercel ─────────────────────────────────────────────
   # Required secrets:
   #   VERCEL_TOKEN      — from vercel.com/account/tokens
   #   VERCEL_ORG_ID     — from .vercel/project.json after `vercel link`

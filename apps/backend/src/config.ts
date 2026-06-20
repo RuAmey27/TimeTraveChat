@@ -2,7 +2,13 @@ import { z } from 'zod'
 
 const envSchema = z.object({
   DATABASE_URL:   z.string().min(1),
-  REDIS_URL:      z.string().min(1),
+  REDIS_URL:      z.string().url().refine(
+    (value) => value.startsWith('redis://') || value.startsWith('rediss://'),
+    {
+      message:
+        'REDIS_URL must start with redis:// or rediss:// and contain only the raw connection URL.',
+    }
+  ),
   KAFKA_BROKERS:  z.string().min(1),
   KAFKA_USERNAME: z.string().optional(),
   KAFKA_PASSWORD: z.string().optional(),
